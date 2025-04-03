@@ -1,0 +1,398 @@
+[현재 생성된 테이블]
+Member			[A] sequence
+Admin
+Logon
+Product			[B]
+MainContract	[E] B에 종속
+SpecialContract	[F] E에 종속
+Disease			[D]
+DiseaseRate
+Contract		[J] sequence; A,B,E,F에 종속
+
+-----------------------------
+[더미 데이터 테이블] - 상황에 따라 안쓸 수도 있음
+Refund			E에 종속
+Payment			E에 종속
+
+============================================================
+[피보험자]
+피보험자 코드 -- PK (A) sequence
+피보험자 주민번호
+피보험자 이름
+피보험자 주소
+피보험자 질병이력(질병코드)
+
+create table Member(
+M_ID varchar2(10) primary key,
+M_RegNum varchar2(14) unique not null,
+M_name varchar2(20),
+M_addr varchar2(50),
+D_ID varchar2(20)
+);
+
+CREATE SEQUENCE mem_seq
+       INCREMENT BY 1
+       START WITH 1
+       MINVALUE 1
+       MAXVALUE 99999999
+       NOCYCLE
+       NOCACHE
+       NOORDER;
+
+insert into Member values (mem_seq.NEXTVAL,'100203-3111111','가가가','서울특별시 영등포구 시범대로24길 1000', 'D00101');
+insert into Member values (mem_seq.NEXTVAL,'200304-4222222','나나나','경기도 수원시 팔달구 시범로 109', null);
+insert into Member values (mem_seq.NEXTVAL,'301105-1333333','다다다','경상남도 창원시 마산합포구 해안대로13길 34-5', 'D00303');
+insert into Member values (mem_seq.NEXTVAL,'440424-2444444','라라라','전라북도 부안군 고부면 계화면 계화4길 22', 'D00404');
+insert into Member values (mem_seq.NEXTVAL,'550515-1555555','마마마','강원도 춘천시 호반로 35', null);
+insert into Member values (mem_seq.NEXTVAL,'660606-2666666','바바바','제주도 서귀포시 신북로 46', null);
+insert into Member values (mem_seq.NEXTVAL,'770707-1777777','사사사','충청북도 괴산군 괴산읍 시범길 777', null);
+insert into Member values (mem_seq.NEXTVAL,'880808-2888888','아아아','경기도 수원시 장안구 장안동', 'D00505');
+insert into Member values (mem_seq.NEXTVAL,'990430-1999999','자자자','부산광역시 수영구 광안대로 245', 'D00701');
+
+commit;
+
+SELECT LPAD(M_ID, 8, 0) as M_ID from Member;
+SELECT M_ID FROM Member WHERE M_RegNum = '990430-1999999';
+
+---------------------------------------------------------
+[관리자(직원)]
+관리자ID
+관리자 이름
+암호
+로그인 여부 (0: 로그아웃, 1: 로그인)
+
+CREATE TABLE Admin(
+Admin_ID varchar2(20) primary key,
+Admin_name varchar2(20),
+Admin_password varchar2(20)
+);
+
+
+-------------------------------------------------------
+[로그온] - 현재 로그인한 관리자
+create table Logon(
+Admin_ID varchar2(20) primary key
+);
+
+insert into Logon values ('hhhh');
+select * from Logon where Admin_ID = 'hhhh';
+delete from Logon where Admin_ID = 'hhhh';
+
+
+-------------------------------------------------------
+[보험상품]
+보험 상품ID  -- PK (B)
+보험 상품명 ----- 상품명 이름 (VARCHAR2)
+
+CREATE TABLE Product(
+P_ID varchar2(10) primary key,
+P_name varchar2(30)
+);
+
+insert into Product values ('B00001','기본종신보험');
+insert into Product values ('B00002','특수종신보험');
+insert into Product values ('B00003','기본단체보험');
+insert into Product values ('B00004','특수단체보험');
+insert into Product values ('B00005','악마의변액보험');
+insert into Product values ('B00006','오류겐보험');
+insert into Product values ('B00007','입원실비보험');
+insert into Product values ('B00008','암질환보험');
+
+
+------------------------------------------------------
+[주계약]		
+주계약 코드	PK [E]
+상품 코드	FK (B)
+주계약 이름
+주계약 최소 가입금액 (단위: 만원)
+주계약 최대 가입금액
+주계약 기준 보험료 (40세 기준)
+
+CREATE TABLE MainContract(
+MC_ID varchar2(10) primary key,
+P_ID varchar2(10),
+MC_name varchar2(30),
+MC_min int,
+MC_max int,
+MC_fee int,
+foreign key(P_ID) references Product(P_ID)
+);
+
+insert into MainContract values ('E00101','B00001','기본종신주계약',2000,200000,200000);
+insert into MainContract values ('E00201','B00002','특수종신주계약',10000,500000,250000);
+insert into MainContract values ('E00301','B00003','기본단체주계약',1000,40000,20000);
+insert into MainContract values ('E00401','B00004','특수단체주계약',2000,70000,24000);
+insert into MainContract values ('E00501','B00005','악마의주계약',30000,1000000,500000);
+insert into MainContract values ('E00601','B00006','오류겐주계약',1500,150000,333333);
+insert into MainContract values ('E00701','B00007','입원치료주계약',500,10000,50000);
+insert into MainContract values ('E00702','B00007','통원치료주계약',300,7000,30000);
+insert into MainContract values ('E00801','B00008','암질환주계약1형',1000,12000,120000);
+insert into MainContract values ('E00802','B00008','암질환주계약2형',1000,8000,80000);
+
+select MC_ID, MC_NAME, MC_FEE from InsuranceMainContractTest where P_ID='A001';
+
+
+-----------------------------------------------------------
+[특약]
+특약 코드 --- PK (F)
+주계약 코드 ------ FK (E)
+특약 이름(명칭)
+특약 가입금액 (무조건 지정됨, 단위: 만원)
+특약 기준 보험료
+
+CREATE TABLE SpecialContract(
+SC_ID varchar2(10) primary key,
+MC_ID varchar2(10),
+SC_name varchar2(30),
+SC_pay int,
+SC_fee int,
+foreign key(MC_ID) references MainContract (MC_ID)
+);
+
+insert into SpecialContract values ('F101010','E00101','입원치료특약',2000,1500);
+insert into SpecialContract values ('F101020','E00201','입원치료특약',3000,1850);
+insert into SpecialContract values ('F101030','E00301','입원치료특약',1000,500);
+insert into SpecialContract values ('F101040','E00401','입원치료특약',1500,850);
+insert into SpecialContract values ('F101080','E00801','입원치료특약',700,525);
+insert into SpecialContract values ('F102020','E00201','도수치료특약',2000,1700);
+insert into SpecialContract values ('F102040','E00401','도수치료특약',2500,2200);
+insert into SpecialContract values ('F103030','E00301','산업재해특약',2000,500);
+insert into SpecialContract values ('F103040','E00401','산업재해특약',4000,760);
+insert into SpecialContract values ('F104010','E00101','수술특약',4000,2500);
+insert into SpecialContract values ('F104030','E00301','수술특약',7000,3500);
+insert into SpecialContract values ('F104040','E00401','수술특약',3000,1600);
+insert into SpecialContract values ('F104060','E00601','수술특약',6500,2700);
+insert into SpecialContract values ('F104081','E00801','수술특약',8000,1730);
+insert into SpecialContract values ('F104082','E00802','수술특약',5000,900);
+insert into SpecialContract values ('F105050','E00501','악마의잭팟',30000,3900);
+insert into SpecialContract values ('F106060','E00601','게임질병특약',5500,440);
+insert into SpecialContract values ('F107010','E00101','통원치료특약',1000,1200);
+insert into SpecialContract values ('F107030','E00301','통원치료특약',1000,710);
+insert into SpecialContract values ('F107060','E00601','통원치료특약',500,620);
+insert into SpecialContract values ('F107070','E00701','통원치료특약',500,320);
+
+select *
+from InsuranceMainContractTest m left outer join InsuranceSpecialContract s
+on m.MC_ID = s.MC_ID;
+
+select m.MC_ID, m.MC_NAME, m.MC_FEE, s.SC_ID, s.SC_NAME, s.SC_INSURANCEFEE
+from InsuranceMainContractTest m left outer join InsuranceSpecialContract s
+on m.MC_ID = s.MC_ID;
+
+select m.MC_ID, m.MC_NAME, m.MC_FEE, s.SC_ID, s.SC_NAME, s.SC_INSURANCEFEE
+from InsuranceMainContractTest m left outer join InsuranceSpecialContract s
+on m.MC_ID = s.MC_ID
+where m.MC_ID='E-00101';
+
+select m.MC_ID, m.MC_NAME, m.MC_FEE, s.SC_ID, s.SC_NAME, s.SC_INSURANCEFEE
+from InsuranceMainContractTest m left outer join InsuranceSpecialContract s
+on m.MC_ID = s.MC_ID
+where m.P_ID='A001' and s.MC_ID=m.P_ID;
+
+select s.SC_ID, s.SC_NAME, s.SC_INSURANCEFEE
+from InsuranceMainContractTest m left outer join InsuranceSpecialContract s
+on m.MC_ID = s.MC_ID;
+
+select SC_ID, SC_NAME, SC_INSURANCEFEE from InsuranceSpecialContract;
+
+select SC_ID, SC_NAME, SC_INSURANCEFEE from InsuranceSpecialContract where MC_ID='E-00101';
+
+
+select m.MC_ID, m.MC_NAME, m.MC_FEE
+from InsuranceMainContractTest m left outer join InsuranceSpecialContract s
+on m.P_ID;
+
+
+------------------------------------------------------------------
+[질병코드(병력)]
+질병코드  ---- PK  --------(D)
+질병명  -------------  varchar2   
+질병종류  ------------  varchar2
+
+CREATE TABLE Disease(
+D_id varchar2(10) primary key,
+D_type varchar2(5),
+D_name varchar2(30)
+);
+
+insert into Disease values ('D00000','DT000','없음');
+insert into Disease values ('D00101','DT001','당뇨');
+insert into Disease values ('D00201','DT002',대장암');
+insert into Disease values ('D00202','DT002','위암');
+insert into Disease values ('D00301','DT003','폐렴');
+insert into Disease values ('D00401','DT004','심근경색');
+insert into Disease values ('D00402','DT004','간경화');
+insert into Disease values ('D00501','DT005','화상');
+insert into Disease values ('D00502','DT005','루게릭병');
+insert into Disease values ('D00601','DT006','장애(하체)');
+insert into Disease values ('D00602','DT006','장애(상체)');
+insert into Disease values ('D00701','DT007','중이염');
+insert into Disease values ('D00702','DT007','녹내장');
+
+
+------------------------------------------------------------
+[질병요율]
+질병종류
+질병요율 (10000배; 25 = 0.0025 = 0.25%)
+
+* 외래키는 설정하지 않는다. Disease 테이블에서 질병코드는 PK, unique가 아니므로 불가능.
+
+#1 만성질환 0.25%
+#2 암 0.3%
+#3 급성질환 0.5%
+#4 중환자 0.75%
+#5 영구장애 1%
+#6 신체부위질환 0.2%
+#7 기타만성질환 0.15%	(추가)
+
+CREATE TABLE DiseaseRate(
+D_type varchar2(5),
+DR_rate int
+);
+
+insert into DiseaseRate values ('DT000',0);
+insert into DiseaseRate values ('DT001',25);
+insert into DiseaseRate values ('DT002',30);
+insert into DiseaseRate values ('DT003',50);
+insert into DiseaseRate values ('DT004',75);
+insert into DiseaseRate values ('DT005',100);
+insert into DiseaseRate values ('DT006',20);
+insert into DiseaseRate values ('DT007',15);
+
+select DR_rate from DiseaseRate where D_type = 'DT001';
+
+select dr.DR_rate
+from DiseaseRate dr, Disease d
+where d.D_id = 'D-00401';
+
+select *
+from DiseaseRate dr right outer join Disease d
+on dr.D_type = d.D_type;
+
+select DR_rate
+from DiseaseRate dr right outer join Disease d
+on dr.D_type = d.D_type
+where d.D_id = 'D-00401';
+
+
+-------------------------------------------------------------------
+[계약 정보]
+계약ID		[J] PK
+피보험자ID	(A) FK
+상품ID		(B) FK
+가입금액
+가입기간
+주계약ID		(E) FK
+특약1ID ~ 특약9ID	(특약은 복수등록 가능하므로 FK를 쓰지 않음)
+
+CREATE TABLE Contract(
+C_ID varchar2(10) primary key,
+M_ID varchar2(10),
+P_ID varchar2(10),
+C_AMOUNT int,
+C_PERIOD int,
+MC_ID varchar2(10),
+SC_ID1 varchar2(10),
+SC_ID2 varchar2(10),
+SC_ID3 varchar2(10),
+SC_ID4 varchar2(10),
+SC_ID5 varchar2(10),
+SC_ID6 varchar2(10),
+SC_ID7 varchar2(10),
+SC_ID8 varchar2(10),
+SC_ID9 varchar2(10),
+foreign key(M_ID) references Member (M_ID),
+foreign key(P_ID) references Product (P_ID),
+foreign key(MC_ID) references MainContract (MC_ID)
+);
+
+CREATE SEQUENCE con_seq
+       INCREMENT BY 1
+       START WITH 1
+       MINVALUE 1
+       MAXVALUE 99999999
+       NOCYCLE
+       NOCACHE
+       NOORDER;
+
+insert into Contract values (con_seq.NEXTVAL,2,'B00001',10000,25,'E00101','F10101','F10401',null,null,null,null,null,null,null);
+insert into Contract values (con_seq.NEXTVAL,2,'B00001',10000,30,'E00101','F101010','F104010',null,null,null,null,null,null,null);
+
+* insert 할 때 2번째 값(M_ID)은 우선 피보험자를 등록한 이후 피보험자 코드를 받아서 입력해야 한다.
+
+SELECT LPAD(C_ID, 8, 0) as C_ID from Contract;
+
+
+==========================================================================
+* 더미 데이터
+
+[해지환급금]
+주계약 코드		(특약은 해지환급금에 포함되지 않으므로 고려대상이 아님)
+환급률(3개월, 6개월, 1년, 2년, ...)  (10000배; 25 = 0.0025 = 0.25%)
+
+
+CREATE TABLE Refund(
+MC_id varchar2(10),
+CR_quaterYear int,
+CR_halfYear int,
+CR_1Year int,
+CR_2Year int,
+CR_3Year int,
+CR_5Year int,
+CR_10Year int,
+CR_15Year int,
+CR_20Year int,
+CR_30Year int,
+foreign key(MC_ID) references MainContract (MC_ID)
+);
+	3개월		6개월		1년		2년		3년		5년		10년		15년		20년		30년
+insert into Refund values ('E00101', 50,75,125,500,1200,2500,5125,6700,7400,7995);
+insert into Refund values ('E00201', 50,75,125,350,900,2250,4900,6600,7515,8010);
+insert into Refund values ('E00301', 25,45,90,300,855,2150,5024,6625,7500,8000);
+insert into Refund values ('E00401', 20,65,65,85,290,840,2120,5005,6615,7505,8015);
+insert into Refund values ('E00501', 1,2,4,10,15,300,500,1000,3000,4900);
+insert into Refund values ('E00601', 75,100,125,250,775,2300,5000,7000,7600,8200);
+insert into Refund values ('E00701', 10,15,20,45,95,165,500,1400,2900,5500);
+insert into Refund values ('E00702', 10,15,20,40,90,170,520,1450,2905,5500);
+insert into Refund values ('E00801', 20,40,75,200,575,1300,3000,4600,6600,7500);
+insert into Refund values ('E00802', 20,40,75,190,560,1200,2850,4500,6400,7200);
+
+(해지환급율 테이블 분리 후)
+insert into Refund values ('G-00106','E-00601');
+
+
+-----------------------------------------------------------------------------------
+
+[만기지급금]
+주계약 코드		(특약은 해지환급금에 포함되지 않으므로 고려대상이 아님)
+만기 후 환급률 (1년, 2년, 3년, 5년, ...)
+* 피보험자가 100세가 될 때까지
+
+CREATE TABLE Payment(
+MC_id varchar2(10),
+DP_1Year int,
+DP_2Year int,
+DP_3Year int,
+DP_5Year int,
+DP_10Year int,
+DP_15Year int,
+DP_20Year int,
+DP_30Year int,
+foreign key(MC_ID) references MainContract (MC_ID)
+);
+
+						1년		2년		3년		5년		10년		15년		20년		30년
+insert into Payment values ('E00101', 10050,10175,10325,10500,10425,10225,9875,6700);
+insert into Payment values ('E00201', 10075,10275,10425,10550,10700,10350,9799,6600);
+insert into Payment values ('E00301', 10035,10045,10100,10300,10405,12150,9925,6525);
+insert into Payment values ('E00401', 10045,10065,10115,10490,10540,12020,9805,6415);
+insert into Payment values ('E00501', 10301,15002,10804,12015,10815,900,700,10);
+insert into Payment values ('E00601', 10075,10100,10525,11850,10775,10300,9925,5700);
+insert into Payment values ('E00701', 7000,7055,7120,7250,7500,6500,5200,4000);
+insert into Payment values ('E00702', 7000,7020,7115,7220,7440,6390,5070,3800);
+insert into Payment values ('E00801', 8000,8065,8140,8285,8400,7575,6300,5300);
+insert into Payment values ('E00802', 8000,8020,8040,8175,8290,7560,6200,5150);
+
+select DP_1Year, DP_2Year, DP_3Year, DP_5Year, DP_10Year, DP_15Year, DP_20Year, DP_30Year
+from DuePaymentTest
+where P_id = 'E-00101';
